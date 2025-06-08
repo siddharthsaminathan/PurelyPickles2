@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purely Pickles - Cost Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🥒 Purely Pickles - Business Calculator</h1>
+            <p>Calculate costs, profits, and manage your pickle business efficiently</p>
+        </header>
+
+        <div class="calculator-tabs">
+            <button class="tab-btn active" onclick="showTab('cost-calculator')">Cost Calculator</button>
+            <button class="tab-btn" onclick="showTab('profit-analyzer')">Profit Analyzer</button>
+            <button class="tab-btn" onclick="showTab('inventory-tracker')">Inventory Tracker</button>
+            <button class="tab-btn" onclick="showTab('recipe-manager')">Recipe Manager</button>
+            <button class="tab-btn" onclick="showTab('settings')">Settings</button>
+        </div>
+
+        <!-- Cost Calculator Tab -->
+        <div id="cost-calculator" class="tab-content active">
+            <div class="recipe-selector">
+                <label for="recipe-select">Select Pickle Recipe:</label>
+                <select id="recipe-select" onchange="loadRecipe()">
+                    <option value="">Choose a recipe...</option>
+                    <option value="mango-thokku">Mango Thokku (1000g)</option>
+                    <option value="avakkai">Avakkai Pickle (5000g)</option>
+                    <option value="lemon">Lemon Pickle (1000g)</option>
+                    <option value="amla">Amla Pickle (1000g)</option>
+                    <option value="tomato-thokku">Tomato Thokku (1000g)</option>
+                    <option value="coriander-thokku">Coriander Thokku (600g)</option>
+                </select>
+                
+                <div class="batch-size-selector" id="batch-size-selector" style="display: none;">
+                    <label for="custom-batch-size">Custom Batch Size (grams):</label>
+                    <input type="number" id="custom-batch-size" min="100" step="100" placeholder="Enter batch size" onchange="updateBatchSize()">
+                    <div class="batch-size-presets">
+                        <button onclick="setBatchSize(250)" class="btn-preset">250g</button>
+                        <button onclick="setBatchSize(500)" class="btn-preset">500g</button>
+                        <button onclick="setBatchSize(1000)" class="btn-preset">1kg</button>
+                        <button onclick="setBatchSize(2000)" class="btn-preset">2kg</button>
+                        <button onclick="setBatchSize(5000)" class="btn-preset">5kg</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recipe-details" id="recipe-details" style="display: none;">
+                <div class="ingredients-section">
+                    <h3>Ingredients & Costs</h3>
+                    <div class="ingredients-table" id="ingredients-table"></div>
+                </div>
+
+                <div class="cost-summary">
+                    <h3>Cost Summary</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <label>Total Ingredients Cost:</label>
+                            <span id="total-ingredients">₹0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <label id="labor-cost-label">Labor Cost (₹120/kg):</label>
+                            <span id="labor-cost">₹0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Total Cost (excluding packaging):</label>
+                            <span id="total-cost-before-packaging">₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="jar-costing">
+                    <h3>Per Jar Costing</h3>
+                    
+                    <!-- Add jar yield information display -->
+                    <div id="jar-yield-info" class="jar-yields-display"></div>
+                    
+                    <div class="jar-grid">
+                        <div class="jar-type">
+                            <h4>100g Jar</h4>
+                            <div class="jar-breakdown">
+                                <span>Ingredients: <span id="jar-100-ingredients">₹0.00</span></span>
+                                <span>Labor: <span id="jar-100-labor">₹12.00</span></span>
+                                <span>Packaging: <span id="jar-100-packaging">₹15.00</span></span>
+                                <span class="total">Total: <span id="jar-100-total">₹0.00</span></span>
+                            </div>
+                        </div>
+                        <div class="jar-type">
+                            <h4>250g Jar</h4>
+                            <div class="jar-breakdown">
+                                <span>Ingredients: <span id="jar-250-ingredients">₹0.00</span></span>
+                                <span>Labor: <span id="jar-250-labor">₹30.00</span></span>
+                                <span>Packaging: <span id="jar-250-packaging">₹20.00</span></span>
+                                <span class="total">Total: <span id="jar-250-total">₹0.00</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profit Analyzer Tab -->
+        <div id="profit-analyzer" class="tab-content">
+            <div class="profit-calculator">
+                <h3>Profit Margin Calculator</h3>
+                <div class="profit-inputs">
+                    <div class="input-group">
+                        <label for="batch-recipe">Recipe:</label>
+                        <select id="batch-recipe" onchange="loadProfitData()">
+                            <option value="">Select recipe...</option>
+                            <option value="mango-thokku">Mango Thokku</option>
+                            <option value="avakkai">Avakkai Pickle</option>
+                            <option value="lemon">Lemon Pickle</option>
+                            <option value="amla">Amla Pickle</option>
+                            <option value="tomato-thokku">Tomato Thokku</option>
+                            <option value="coriander-thokku">Coriander Thokku</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="jar-mix">Jar Mix (100g:250g):</label>
+                        <select id="jar-mix" onchange="calculateProfits()">
+                            <option value="50:50">50% : 50%</option>
+                            <option value="70:30">70% : 30%</option>
+                            <option value="30:70">30% : 70%</option>
+                            <option value="100:0">100% : 0%</option>
+                            <option value="0:100">0% : 100%</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="total-jars">Total Jars:</label>
+                        <input type="number" id="total-jars" value="1000" onchange="calculateProfits()">
+                    </div>
+                </div>
+
+                <div class="profit-margins">
+                    <h4>Profit Analysis by Margin</h4>
+                    <div class="margin-table" id="margin-table"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Tracker Tab -->
+        <div id="inventory-tracker" class="tab-content">
+            <div class="inventory-section">
+                <h3>Ingredient Inventory Tracker</h3>
+                <div class="inventory-controls">
+                    <button onclick="addIngredient()" class="btn btn-primary">Add Ingredient</button>
+                    <button onclick="exportInventory()" class="btn btn-secondary">Export to CSV</button>
+                </div>
+                <div class="inventory-table" id="inventory-table"></div>
+            </div>
+        </div>
+
+        <!-- Recipe Manager Tab -->
+        <div id="recipe-manager" class="tab-content">
+            <div class="recipe-manager-section">
+                <h3>Recipe Manager</h3>
+                <div class="recipe-controls">
+                    <button onclick="addRecipe()" class="btn btn-primary">Add Recipe</button>
+                    <button onclick="exportRecipes()" class="btn btn-secondary">Export Recipes</button>
+                </div>
+                <div class="recipe-table" id="recipe-table"></div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="settings-section">
+                <h3>Settings</h3>
+                <div class="settings-form">
+                    <label for="labor-cost-setting">Labor Cost (₹/kg):</label>
+                    <input type="number" id="labor-cost-setting" value="120" onchange="updateLaborCost()">
+                </div>
+                <div class="packaging-options">
+                    <h4>Packaging Options</h4>
+                    <div class="packaging-option">
+                        <label for="packaging-100g">100g Jar Packaging Cost:</label>
+                        <input type="number" id="packaging-100g" value="15" onchange="updatePackagingCost('100g')">
+                    </div>
+                    <div class="packaging-option">
+                        <label for="packaging-250g">250g Jar Packaging Cost:</label>
+                        <input type="number" id="packaging-250g" value="20" onchange="updatePackagingCost('250g')">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
