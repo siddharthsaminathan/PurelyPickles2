@@ -1,145 +1,98 @@
-# 🥒 Purely Pickles - Business Cost Calculator
+# Purely Pickles - Business Calculator
 
-A comprehensive web application for calculating costs, profits, and managing inventory for a pickle manufacturing business. This calculator includes all major Indian pickle recipes with detailed ingredient pricing based on market rates.
+A comprehensive web application for managing pickle business operations including cost calculation, profit analysis, inventory tracking, and customer order management.
 
 ## Features
 
-### 📊 Cost Calculator
-- **6 Complete Pickle Recipes**: Mango Thokku, Avakkai, Lemon, Amla, Tomato Thokku, and Coriander Thokku
-- **Detailed Ingredient Breakdown**: Per-gram pricing for all ingredients
-- **Labor Cost Integration**: ₹120/kg labor cost calculation
-- **Jar Size Costing**: Separate calculations for 100g and 250g jars
-- **Packaging Costs**: ₹15 for 100g jars, ₹20 for 250g jars
+### 🧮 Cost Calculator
+- Calculate ingredient costs for multiple pickle recipes
+- Dynamic batch size scaling (250g to 5kg+)
+- Real-world jar yields based on actual production experience
+- Labor and packaging cost integration
 
-### 💰 Profit Analyzer
-- **Multiple Margin Analysis**: 40%, 50%, 60%, and 70% profit margins
-- **Flexible Jar Mix**: Configure ratios of 100g to 250g jars
-- **Batch Quantity Scaling**: Calculate profits for any number of jars
-- **Revenue & Cost Breakdown**: Complete financial analysis
+### 📊 Profit Analyzer
+- Base pricing strategy (₹65 for 100g, ₹150 for 250g)
+- Multiple profit margin scenarios (Base, +30%, +40%, +50%)
+- Market positioning recommendations
+- ROI calculations with visual profit badges
 
-### 📦 Inventory Tracker
-- **Real-time Stock Management**: Track opening stock, purchases, usage, and closing stock
-- **Value Calculation**: Automatic inventory valuation
-- **CSV Export**: Export inventory reports for accounting
-- **Dynamic Ingredient Management**: Add/remove ingredients as needed
+### 📝 Simple Order Tracker (Grandmother-Friendly)
+- Large button interface for elderly users
+- Daily customer tracking with bottle counters
+- Automatic total calculations
+- Print/export functionality for daily reports
 
-## Recipe Database
+### 📦 Inventory Management
+- Raw ingredient stock tracking
+- Finished product stock management
+- Low stock alerts and status indicators
+- Batch number and expiry date tracking
 
-The calculator includes market-researched pricing for all ingredients:
+### 🔧 Recipe Management
+- Pre-configured recipes: Mango Thokku, Avakkai, Lemon Pickle, Amla Pickle, Tomato Thokku, Coriander Thokku
+- Editable ingredient prices and quantities
+- Accurate per-gram cost calculations
 
-| Recipe | Batch Size | Key Ingredients | Total Cost (incl. labor) |
-|--------|------------|----------------|---------------------------|
-| Mango Thokku | 1000g | Gingelly oil, Chilli powder, Salt | ₹344.47 |
-| Avakkai Pickle | 5000g | Mango, Chilli powder, Oil | ₹2,541.40 |
-| Lemon Pickle | 1000g | Lemon, Oil, Spices | ₹384.38 |
-| Amla Pickle | 1000g | Amla, Oil, Tamarind | ₹541.92 |
-| Tomato Thokku | 1000g | Tomato, Oil, Spices | ₹358.96 |
-| Coriander Thokku | 600g | Coriander leaves, Oil | ₹430.03 |
+## Quick Start
 
-## How to Use
+1. Open `index.html` in any modern web browser
+2. Select a recipe to calculate costs
+3. Use the Profit Analyzer to determine selling prices
+4. Track daily customers in the Order Tracker
+5. Manage inventory in Stock Management
 
-### Getting Started
-1. Open `index.html` in your web browser
-2. Navigate between tabs using the top navigation
-3. Start with the Cost Calculator to analyze recipes
+## Deployment
+
+### Local Development
+```bash
+python3 -m http.server 8000
+# Visit http://localhost:8000
+```
+
+### Deploy to Vercel
+```bash
+npm install -g vercel
+vercel login
+vercel --prod
+```
+
+## Usage Guide
 
 ### Cost Calculator
-1. Select a pickle recipe from the dropdown
-2. View detailed ingredient breakdown and costs
-3. Check per-jar costing for both 100g and 250g sizes
-4. Use the data for pricing decisions
+1. Select a pickle recipe from dropdown
+2. Adjust batch size using presets or custom input
+3. View detailed ingredient breakdown
+4. See per-jar costs for 100g and 250g sizes
+
+### Order Tracker (For Elderly Users)
+1. Enter customer name and phone
+2. Use + and - buttons to count bottles
+3. See total amount automatically calculated
+4. Save customer and view daily summary
 
 ### Profit Analyzer
-1. Choose a recipe and jar mix ratio
-2. Set the total number of jars to produce
-3. View profit analysis across different margin percentages
-4. Make informed pricing and production decisions
-
-### Inventory Tracker
-1. Update opening stock and purchases
-2. Record ingredient usage
-3. Monitor closing stock and inventory value
-4. Export reports for accounting purposes
+1. Choose recipe and jar mix ratio
+2. Set total production quantity
+3. View pricing scenarios with different margins
+4. Use market positioning recommendations
 
 ## Technical Details
 
-### Cost Calculations
-- **Per-gram pricing** based on DMart and BigBasket market rates
-- **Labor cost** calculated at ₹120 per kg of output
-- **Packaging costs** factored into final jar pricing
-- **Scalable calculations** for different batch sizes
+- **Frontend**: Pure HTML5, CSS3, JavaScript (ES6+)
+- **Storage**: Browser localStorage for data persistence
+- **Responsive**: Mobile-friendly design
+- **Accessibility**: High contrast mode support
+- **Currency**: Indian Rupee (₹) formatting
 
-### Pricing Sources
-All ingredient prices are sourced from major Indian retailers:
-- Fenugreek powder: ₹0.12/g
-- Mustard powder: ₹0.30/g
-- Asafoetida: ₹1.38/g
-- Gingelly oil: ₹0.376/g
-- And many more...
+## Business Focus
 
-## File Structure
-```
-purelypickles/
-├── index.html          # Main application interface
-├── styles.css          # Responsive styling
-├── script.js           # Business logic and calculations
-├── .github/
-│   └── copilot-instructions.md
-└── README.md           # This documentation
-```
-
-## Business Applications
-
-### Production Planning
-- Calculate exact ingredient requirements for any batch size
-- Determine optimal jar size mix for maximum profitability
-- Plan inventory purchases based on production schedules
-
-### Financial Analysis
-- Set competitive pricing with accurate cost calculations
-- Analyze profit margins across different product lines
-- Track ingredient cost fluctuations and their impact
-
-### Inventory Management
-- Monitor stock levels to prevent shortages
-- Calculate inventory value for financial reporting
-- Export data for integration with accounting systems
-
-## Browser Compatibility
-- Chrome/Edge (Recommended)
-- Firefox
-- Safari
-- Mobile responsive design
-
-## Customization
-
-### Adding New Recipes
-1. Edit `script.js`
-2. Add recipe data to the `recipes` object
-3. Include all ingredients with per-gram pricing
-4. Update dropdown options in `index.html`
-
-### Updating Prices
-1. Modify ingredient prices in the recipe data
-2. Prices are automatically reflected in all calculations
-3. Consider seasonal price variations
-
-## Support & Maintenance
-
-### Regular Updates Recommended
-- **Monthly**: Review and update ingredient prices
-- **Quarterly**: Add new recipes or seasonal variations
-- **Annually**: Review labor and packaging costs
-
-### Data Backup
-- Export inventory data regularly
-- Backup customized recipes and pricing
-- Keep historical data for trend analysis
+Designed specifically for Indian pickle manufacturers with:
+- Accurate ingredient pricing per gram
+- Regional recipe variations
+- Family business workflow optimization
+- Elderly-friendly interfaces
+- Financial planning tools
 
 ## License
 
-This project is created for Purely Pickles business operations. All rights reserved.
-
----
-
-**Note**: Ingredient prices are based on 2024 market rates and should be updated regularly to reflect current market conditions.
+MIT License - Free for commercial and personal use

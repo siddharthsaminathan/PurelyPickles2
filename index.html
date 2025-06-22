@@ -17,6 +17,8 @@
             <button class="tab-btn active" onclick="showTab('cost-calculator')">Cost Calculator</button>
             <button class="tab-btn" onclick="showTab('profit-analyzer')">Profit Analyzer</button>
             <button class="tab-btn" onclick="showTab('inventory-tracker')">Inventory Tracker</button>
+            <button class="tab-btn" onclick="showTab('stock-management')">Stock Management</button>
+            <button class="tab-btn" onclick="showTab('order-tracking')">Order Tracking</button>
             <button class="tab-btn" onclick="showTab('recipe-manager')">Recipe Manager</button>
             <button class="tab-btn" onclick="showTab('settings')">Settings</button>
         </div>
@@ -151,6 +153,107 @@
                     <button onclick="exportInventory()" class="btn btn-secondary">Export to CSV</button>
                 </div>
                 <div class="inventory-table" id="inventory-table"></div>
+            </div>
+        </div>
+
+        <!-- Stock Management Tab -->
+        <div id="stock-management" class="tab-content">
+            <div class="stock-section">
+                <h3>Stock Management</h3>
+                <div class="stock-controls">
+                    <button onclick="addStockItem()" class="btn btn-primary">Add Stock Item</button>
+                    <button onclick="exportStock()" class="btn btn-secondary">Export Stock to CSV</button>
+                </div>
+                <div class="stock-table" id="stock-table"></div>
+            </div>
+        </div>
+
+        <!-- Order Tracking Tab -->
+        <div id="order-tracking" class="tab-content">
+            <div class="simple-order-section">
+                <h2>📝 Daily Customer Tracker</h2>
+                <p class="helper-text">Track who took pickles today and how much they owe</p>
+                
+                <!-- Add New Customer Section -->
+                <div class="add-customer-card">
+                    <h3>➕ Add New Customer</h3>
+                    <div class="simple-form">
+                        <div class="form-row">
+                            <label class="big-label">Customer Name:</label>
+                            <input type="text" id="customer-name" class="big-input" placeholder="Enter name...">
+                        </div>
+                        
+                        <div class="form-row">
+                            <label class="big-label">Phone Number:</label>
+                            <input type="tel" id="customer-phone" class="big-input" placeholder="Enter phone...">
+                        </div>
+                        
+                        <div class="bottles-section">
+                            <h4>Bottles Taken:</h4>
+                            <div class="bottle-counters">
+                                <div class="bottle-type">
+                                    <span class="bottle-label">100g Bottles (₹65 each)</span>
+                                    <div class="counter">
+                                        <button onclick="changeBottleCount('100g', -1)" class="counter-btn">-</button>
+                                        <span id="count-100g" class="count-display">0</span>
+                                        <button onclick="changeBottleCount('100g', 1)" class="counter-btn">+</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="bottle-type">
+                                    <span class="bottle-label">250g Bottles (₹150 each)</span>
+                                    <div class="counter">
+                                        <button onclick="changeBottleCount('250g', -1)" class="counter-btn">-</button>
+                                        <span id="count-250g" class="count-display">0</span>
+                                        <button onclick="changeBottleCount('250g', 1)" class="counter-btn">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="total-section">
+                            <div class="total-display">
+                                <span class="total-label">Total Amount:</span>
+                                <span id="total-amount" class="total-value">₹0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button onclick="saveCustomerOrder()" class="big-save-btn">💾 Save Customer</button>
+                            <button onclick="clearForm()" class="big-clear-btn">🗑️ Clear</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Today's Customers List -->
+                <div class="customers-list-card">
+                    <h3>📋 Today's Customers</h3>
+                    <div class="customers-summary">
+                        <div class="summary-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="total-customers">0</span>
+                                <span class="stat-label">Customers</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="total-bottles">0</span>
+                                <span class="stat-label">Bottles Sold</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="total-money">₹0</span>
+                                <span class="stat-label">Total Money</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="customers-table" id="simple-customers-table">
+                        <!-- Customer entries will be dynamically added here -->
+                    </div>
+                    
+                    <div class="list-actions">
+                        <button onclick="exportTodaysCustomers()" class="action-btn">📄 Print List</button>
+                        <button onclick="clearTodaysCustomers()" class="action-btn clear-all">🗑️ Clear All</button>
+                    </div>
+                </div>
             </div>
         </div>
 

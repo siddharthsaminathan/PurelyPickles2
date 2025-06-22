@@ -129,11 +129,12 @@ let recipes = {
     'coriander-thokku': {
         name: 'Coriander Thokku',
         batchSize: 1000,
-        // Real-world jar yields based on grandmother's experience
+        // Real-world jar yields based on actual production experience
+        // From 1kg ingredients = 8-9 x 300g jars (2400-2700g total)
+        // Scaled proportionally for 100g and 250g jars
         jarYields: {
-            '100g': 15,  // Can fill 15 x 100g jars from 1000g
-            '250g': 6,   // Can fill 6 x 250g jars from 1000g  
-            '300g': 10   // Can fill 10 x 300g jars from 1000g (grandmother's fact)
+            '100g': 26,  // Can fill 26 x 100g jars from 1000g ingredients (makes 2.6kg total)
+            '250g': 10   // Can fill 10 x 250g jars from 1000g ingredients (makes 2.5kg total)
         },
         ingredients: [
             { name: 'Coriander (leaves)', quantity: 600, unit: 'g', pricePerGram: 0.113, cost: 67.80 },
@@ -211,11 +212,18 @@ function showTab(tabId) {
     document.getElementById(tabId).classList.add('active');
     
     // Add active class to clicked button
-    event.target.classList.add('active');
+    const clickedButton = document.querySelector(`.tab-btn[onclick="showTab('${tabId}')"]`);
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
     
     // Initialize specific tab content
     if (tabId === 'inventory-tracker') {
         initializeInventory();
+    } else if (tabId === 'stock-management') {
+        initializeStockManagement();
+    } else if (tabId === 'order-tracking') {
+        initializeSimpleOrderTracking(); // Initialize simple order tracking
     } else if (tabId === 'recipe-manager') {
         displayRecipeManager();
     } else if (tabId === 'settings') {
@@ -447,104 +455,179 @@ function calculateProfits() {
     const jars100g = Math.floor(totalJars * (ratio100 / 100));
     const jars250g = totalJars - jars100g;
     
-    // Calculate costs per jar
-    const ingredientsPer100g = (recipe.totalIngredientsCost / recipe.batchSize) * 100;
-    const ingredientsPer250g = (recipe.totalIngredientsCost / recipe.batchSize) * 250;
-    
-    const cost100g = ingredientsPer100g + packaging.labor100g + packaging.jar100g;
-    const cost250g = ingredientsPer250g + packaging.labor250g + packaging.jar250g;
+    // Simple cost calculation without jar yields dependency
+    // Use basic cost per jar calculation
+    const cost100g = 40.77; // Average cost for 100g jar
+    const cost250g = 85.80; // Average cost for 250g jar
     
     // Generate profit table
-    generateProfitTable(cost100g, cost250g, jars100g, jars250g);
+    generateProfitTableWithJarSizes(cost100g, cost250g, jars100g, jars250g, recipe.name);
 }
 
-function generateProfitTable(cost100g, cost250g, jars100g, jars250g) {
-    const margins = [40, 50, 60, 70];
+function generateProfitTableWithJarSizes(cost100g, cost250g, jars100g, jars250g, recipeName) {
+    const margins = [0, 30, 40, 50]; // Added 0% margin to show base price profit
     const tableContainer = document.getElementById('margin-table');
     
-    // Determine which jar sizes to show based on mix
+    // Base selling prices in INR
+    const basePrice100g = 65;
+    const basePrice250g = 150;
+    
+    // Determine which jar sizes to show
     const show100g = jars100g > 0;
     const show250g = jars250g > 0;
+    const totalJars = jars100g + jars250g;
     
     let tableHTML = `
-        <table>
-            <thead>
-                <tr>
-                    <th>Margin %</th>`;
-    
-    // Only show columns for relevant jar sizes
-    if (show100g) {
-        tableHTML += `<th>100g Price</th>`;
-    }
-    if (show250g) {
-        tableHTML += `<th>250g Price</th>`;
-    }
-    
-    tableHTML += `
-                    <th>Total Revenue</th>
-                    <th>Total Cost</th>
-                    <th>Total Profit</th>
-                    <th>Profit Margin</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div class="profit-overview">
+            <h4>Profit Analysis for ${recipeName}</h4>
+            <div class="production-summary">
+                <div class="summary-card">
+                    <h5>Production Mix</h5>
+                    <p>${show100g ? `${jars100g} × 100g jars` : ''}${show100g && show250g ? '<br>' : ''}${show250g ? `${jars250g} × 250g jars` : ''}</p>
+                    <p><strong>Total: ${totalJars} jars</strong></p>
+                </div>
+                <div class="summary-card">
+                    <h5>Cost per Jar</h5>
+                    <p>100g jar: <strong>₹${cost100g.toFixed(2)}</strong></p>
+                    <p>250g jar: <strong>₹${cost250g.toFixed(2)}</strong></p>
+                </div>
+                <div class="summary-card">
+                    <h5>Total Investment</h5>
+                    <p><strong>₹${((cost100g * jars100g) + (cost250g * jars250g)).toFixed(2)}</strong></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="pricing-scenarios">
+            <h4>Pricing Scenarios & Profit Analysis</h4>
+            <div class="base-pricing-info">
+                <div class="base-price-card">
+                    <h5>Base Selling Prices</h5>
+                    <p>100g jar: <strong>₹${basePrice100g}</strong></p>
+                    <p>250g jar: <strong>₹${basePrice250g}</strong></p>
+                    <small>Margins calculated from these base prices</small>
+                </div>
+            </div>
+            <div class="scenarios-grid">
     `;
     
     margins.forEach(margin => {
-        const multiplier = 1 + (margin / 100);
-        const price100g = cost100g * multiplier;
-        const price250g = cost250g * multiplier;
+        const sellingPrice100g = basePrice100g * (1 + margin/100);
+        const sellingPrice250g = basePrice250g * (1 + margin/100);
+        const profit100g = sellingPrice100g - cost100g;
+        const profit250g = sellingPrice250g - cost250g;
         
-        const revenue100g = price100g * jars100g;
-        const revenue250g = price250g * jars250g;
+        const revenue100g = sellingPrice100g * jars100g;
+        const revenue250g = sellingPrice250g * jars250g;
         const totalRevenue = revenue100g + revenue250g;
         
         const totalCost = (cost100g * jars100g) + (cost250g * jars250g);
         const totalProfit = totalRevenue - totalCost;
-        const profitMargin = ((totalProfit / totalRevenue) * 100);
+        const profitPercentage = ((totalProfit / totalCost) * 100);
+        
+        // Calculate actual margin based on cost
+        const actualMargin100g = ((sellingPrice100g - cost100g) / cost100g * 100);
+        const actualMargin250g = ((sellingPrice250g - cost250g) / cost250g * 100);
+        
+        // Different header text for 0% margin
+        const headerText = margin === 0 ? 'Base Price (0% markup)' : `+${margin}% from Base Price`;
         
         tableHTML += `
-            <tr>
-                <td>${margin}%</td>`;
-        
-        // Only show prices for relevant jar sizes
-        if (show100g) {
-            tableHTML += `<td>₹${price100g.toFixed(2)} (${jars100g} jars)</td>`;
-        }
-        if (show250g) {
-            tableHTML += `<td>₹${price250g.toFixed(2)} (${jars250g} jars)</td>`;
-        }
-        
-        tableHTML += `
-                <td>₹${totalRevenue.toFixed(2)}</td>
-                <td>₹${totalCost.toFixed(2)}</td>
-                <td>₹${totalProfit.toFixed(2)}</td>
-                <td>${profitMargin.toFixed(1)}%</td>
-            </tr>
+            <div class="scenario-card ${margin === 0 ? 'base-scenario' : ''}">
+                <div class="scenario-header">
+                    <h5>${headerText}</h5>
+                    <div class="profit-badge ${margin === 0 ? 'base-profit' : ''}">₹${totalProfit.toFixed(0)} profit</div>
+                </div>
+                
+                <div class="pricing-details">
+                    ${show100g ? `
+                    <div class="jar-pricing">
+                        <span class="jar-type">100g jar:</span>
+                        <span class="price">₹${sellingPrice100g.toFixed(0)}</span>
+                        <span class="profit">(₹${profit100g.toFixed(0)} profit | ${actualMargin100g.toFixed(0)}% margin)</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${show250g ? `
+                    <div class="jar-pricing">
+                        <span class="jar-type">250g jar:</span>
+                        <span class="price">₹${sellingPrice250g.toFixed(0)}</span>
+                        <span class="profit">(₹${profit250g.toFixed(0)} profit | ${actualMargin250g.toFixed(0)}% margin)</span>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="scenario-summary">
+                    <div class="summary-row">
+                        <span>Total Revenue:</span>
+                        <span><strong>₹${totalRevenue.toFixed(0)}</strong></span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Total Investment:</span>
+                        <span>₹${totalCost.toFixed(0)}</span>
+                    </div>
+                    <div class="summary-row highlight">
+                        <span>Net Profit:</span>
+                        <span><strong>₹${totalProfit.toFixed(0)}</strong></span>
+                    </div>
+                    <div class="roi-indicator ${margin === 0 ? 'base-roi' : ''}">
+                        <span>ROI: ${profitPercentage.toFixed(1)}%</span>
+                    </div>
+                </div>
+            </div>
         `;
     });
     
     tableHTML += `
-            </tbody>
-        </table>
+            </div>
+        </div>
         
-        <div class="jar-summary">
-            <h5>Jar Breakdown:</h5>
-            <p>`;
-    
-    if (show100g && show250g) {
-        tableHTML += `${jars100g} × 100g jars + ${jars250g} × 250g jars = ${jars100g + jars250g} total jars`;
-    } else if (show100g) {
-        tableHTML += `${jars100g} × 100g jars only`;
-    } else if (show250g) {
-        tableHTML += `${jars250g} × 250g jars only`;
-    }
-    
-    tableHTML += `</p>
+        <div class="market-recommendations">
+            <h4>Market Positioning Strategy</h4>
+            <div class="recommendations-grid">
+                <div class="recommendation-card standard">
+                    <h5>Base Price Strategy</h5>
+                    <p class="price-range">₹${basePrice100g} - ₹${basePrice250g}</p>
+                    <p>Competitive entry-level pricing to establish market presence</p>
+                </div>
+                <div class="recommendation-card premium">
+                    <h5>Growth Strategy (+30%)</h5>
+                    <p class="price-range">₹${(basePrice100g * 1.3).toFixed(0)} - ₹${(basePrice250g * 1.3).toFixed(0)}</p>
+                    <p>Balanced growth pricing for established customers</p>
+                </div>
+                <div class="recommendation-card premium">
+                    <h5>Premium Strategy (+40-50%)</h5>
+                    <p class="price-range">₹${(basePrice100g * 1.4).toFixed(0)} - ₹${(basePrice250g * 1.5).toFixed(0)}</p>
+                    <p>Premium positioning for quality-conscious market</p>
+                </div>
+            </div>
         </div>
     `;
     
     tableContainer.innerHTML = tableHTML;
+}
+
+// Packaging cost calculator
+function calculatePackagingCosts() {
+    const recipeSelect = document.getElementById('recipe-select');
+    const selectedRecipe = recipeSelect.value;
+    
+    if (!selectedRecipe) return;
+    
+    const recipe = recipes[selectedRecipe];
+    const jarYields = recipe.jarYields;
+    
+    // Calculate number of jars for each size
+    const numJars100g = Math.ceil(recipe.batchSize / 100) * (jarYields['100g'] || 0);
+    const numJars250g = Math.ceil(recipe.batchSize / 250) * (jarYields['250g'] || 0);
+    
+    // Calculate total packaging cost
+    const totalCost100g = numJars100g * (packaging.jar100g + packaging.labor100g);
+    const totalCost250g = numJars250g * (packaging.jar250g + packaging.labor250g);
+    
+    // Display results
+    document.getElementById('packaging-cost-100g').textContent = `₹${totalCost100g.toFixed(2)}`;
+    document.getElementById('packaging-cost-250g').textContent = `₹${totalCost250g.toFixed(2)}`;
 }
 
 // Inventory tracking
@@ -556,15 +639,22 @@ function initializeInventory() {
         const commonIngredients = [
             { name: 'Crushed Salt', unit: '1 kg', unitPrice: 44.00, opening: 0, purchased: 0, used: 0 },
             { name: 'Chilli Powder', unit: '100 g', unitPrice: 20.00, opening: 0, purchased: 0, used: 0 },
-            { name: 'Fenugreek Powder', unit: '50 g', unitPrice: 5.00, opening: 0, purchased: 0, used: 0 },
-            { name: 'Mustard Powder', unit: '100 g', unitPrice: 30.00, opening: 0, purchased: 0, used: 0 },
-            { name: 'Asafoetida', unit: '50 g', unitPrice: 69.00, opening: 0, purchased: 0, used: 0 },
+            { name: 'Fenugreek Powder', unit: '100 g', unitPrice: 12.00, opening: 0, purchased: 0, used: 0 },
+            { name: 'Mustard Seeds', unit: '100 g', unitPrice: 10.70, opening: 0, purchased: 0, used: 0 },
             { name: 'Turmeric Powder', unit: '100 g', unitPrice: 46.00, opening: 0, purchased: 0, used: 0 },
+            { name: 'Asafoetida', unit: '10 g', unitPrice: 138.00, opening: 0, purchased: 0, used: 0 },
             { name: 'Gingelly Oil', unit: '1 L', unitPrice: 376.00, opening: 0, purchased: 0, used: 0 },
-            { name: 'Mustard Seeds', unit: '1 kg', unitPrice: 107.00, opening: 0, purchased: 0, used: 0 }
+            { name: 'Sodium Benzoate', unit: '100 g', unitPrice: 16.00, opening: 0, purchased: 0, used: 0 },
+            { name: 'Dry Red Chillies', unit: '100 g', unitPrice: 51.00, opening: 0, purchased: 0, used: 0 },
+            { name: 'Jaggery', unit: '100 g', unitPrice: 8.50, opening: 0, purchased: 0, used: 0 }
         ];
         
-        inventoryData = [...commonIngredients];
+        inventoryData = commonIngredients.map(ingredient => ({
+            ...ingredient,
+            opening: 10, // Default opening stock
+            purchased: 0,
+            used: 0
+        }));
     }
     
     displayInventoryTable();
@@ -675,7 +765,828 @@ function formatCurrency(amount) {
     return `₹${amount.toFixed(2)}`;
 }
 
-// Initialize the application
+// Stock Management functionality
+let stockItems = [];
+
+function initializeStockManagement() {
+    // Load stock data from localStorage if available
+    const storedStock = localStorage.getItem('pickleStock');
+    if (storedStock) {
+        stockItems = JSON.parse(storedStock);
+    } else {
+        // Initialize with sample data
+        stockItems = [
+            {
+                id: 1,
+                productType: 'Mango Thokku',
+                jarSize: '100g',
+                batchNumber: 'MT-001',
+                productionDate: '2025-05-15',
+                expiryDate: '2026-05-15',
+                quantity: 50,
+                pricePerUnit: 120,
+                status: 'in-stock',
+                location: 'Shelf A'
+            },
+            {
+                id: 2,
+                productType: 'Avakkai Pickle',
+                jarSize: '250g',
+                batchNumber: 'AP-001',
+                productionDate: '2025-05-10',
+                expiryDate: '2026-05-10',
+                quantity: 30,
+                pricePerUnit: 220,
+                status: 'in-stock',
+                location: 'Shelf B'
+            },
+            {
+                id: 3,
+                productType: 'Lemon Pickle',
+                jarSize: '100g',
+                batchNumber: 'LP-001',
+                productionDate: '2025-05-05',
+                expiryDate: '2026-05-05',
+                quantity: 10,
+                pricePerUnit: 110,
+                status: 'low-stock',
+                location: 'Shelf A'
+            }
+        ];
+    }
+    
+    // Add filter UI to the stock management page
+    displayStockFilters();
+    
+    // Display stock table
+    displayStockTable(stockItems);
+}
+
+function displayStockFilters() {
+    const stockSection = document.getElementById('stock-management');
+    
+    // Remove existing filters to prevent duplicates
+    const existingFilters = stockSection.querySelector('.stock-filters');
+    if (existingFilters) {
+        existingFilters.remove();
+    }
+    
+    const filterContainer = document.createElement('div');
+    filterContainer.className = 'stock-filters';
+    
+    // Get unique values for dropdown filters
+    const productTypes = [...new Set(stockItems.map(item => item.productType))];
+    const jarSizes = [...new Set(stockItems.map(item => item.jarSize))];
+    const statuses = [...new Set(stockItems.map(item => item.status))];
+    const locations = [...new Set(stockItems.map(item => item.location))];
+    
+    filterContainer.innerHTML = `
+        <div class="filter-group">
+            <label for="filter-product-type">Product Type:</label>
+            <select id="filter-product-type" onchange="filterStock()">
+                <option value="">All Products</option>
+                ${productTypes.map(type => `<option value="${type}">${type}</option>`).join('')}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-jar-size">Jar Size:</label>
+            <select id="filter-jar-size" onchange="filterStock()">
+                <option value="">All Sizes</option>
+                ${jarSizes.map(size => `<option value="${size}">${size}</option>`).join('')}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-status">Status:</label>
+            <select id="filter-status" onchange="filterStock()">
+                <option value="">All Status</option>
+                ${statuses.map(status => `<option value="${status}">${formatStatus(status)}</option>`).join('')}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-location">Location:</label>
+            <select id="filter-location" onchange="filterStock()">
+                <option value="">All Locations</option>
+                ${locations.map(location => `<option value="${location}">${location}</option>`).join('')}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="search-stock">Search:</label>
+            <input type="text" id="search-stock" placeholder="Search batch number or product..." oninput="filterStock()">
+        </div>
+    `;
+    
+    // Insert filters before the stock-table but after the stock-controls
+    const stockControls = stockSection.querySelector('.stock-controls');
+    stockControls.after(filterContainer);
+}
+
+function filterStock() {
+    const productTypeFilter = document.getElementById('filter-product-type').value;
+    const jarSizeFilter = document.getElementById('filter-jar-size').value;
+    const statusFilter = document.getElementById('filter-status').value;
+    const locationFilter = document.getElementById('filter-location').value;
+    const searchQuery = document.getElementById('search-stock').value.toLowerCase();
+    
+    const filteredStock = stockItems.filter(item => {
+        return (!productTypeFilter || item.productType === productTypeFilter) && 
+               (!jarSizeFilter || item.jarSize === jarSizeFilter) && 
+               (!statusFilter || item.status === statusFilter) && 
+               (!locationFilter || item.location === locationFilter) && 
+               (!searchQuery || 
+                item.productType.toLowerCase().includes(searchQuery) || 
+                item.batchNumber.toLowerCase().includes(searchQuery));
+    });
+    
+    displayStockTable(filteredStock);
+}
+
+function displayStockTable(items) {
+    const tableContainer = document.getElementById('stock-table');
+    
+    let tableHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Jar Size</th>
+                    <th>Batch #</th>
+                    <th>Production Date</th>
+                    <th>Expiry Date</th>
+                    <th>Quantity</th>
+                    <th>Unit Price (₹)</th>
+                    <th>Total Value (₹)</th>
+                    <th>Status</th>
+                    <th>Location</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    if (items.length === 0) {
+        tableHTML += `
+            <tr>
+                <td colspan="11" style="text-align: center;">No stock items found</td>
+            </tr>
+        `;
+    } else {
+        items.forEach(item => {
+            const totalValue = item.quantity * item.pricePerUnit;
+            const statusClass = getStatusClass(item.status);
+            
+            tableHTML += `
+                <tr>
+                    <td>${item.productType}</td>
+                    <td>${item.jarSize}</td>
+                    <td>${item.batchNumber}</td>
+                    <td>${formatDate(item.productionDate)}</td>
+                    <td>${formatDate(item.expiryDate)}</td>
+                    <td><input type="number" value="${item.quantity}" onchange="updateStockQuantity(${item.id}, this.value)" min="0"></td>
+                    <td>₹${item.pricePerUnit.toFixed(2)}</td>
+                    <td>₹${totalValue.toFixed(2)}</td>
+                    <td><span class="stock-status ${statusClass}">${formatStatus(item.status)}</span></td>
+                    <td>${item.location}</td>
+                    <td>
+                        <button onclick="editStockItem(${item.id})" class="btn btn-primary">Edit</button>
+                        <button onclick="deleteStockItem(${item.id})" class="btn btn-secondary">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    tableHTML += `
+            </tbody>
+        </table>
+        
+        <div class="stock-summary">
+            <p><strong>Total Items:</strong> ${items.length}</p>
+            <p><strong>Total Value:</strong> ₹${items.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0).toFixed(2)}</p>
+        </div>
+    `;
+    
+    tableContainer.innerHTML = tableHTML;
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'in-stock':
+            return 'status-in-stock';
+        case 'low-stock':
+            return 'status-low-stock';
+        case 'out-of-stock':
+            return 'status-out-of-stock';
+        default:
+            return '';
+    }
+}
+
+function formatStatus(status) {
+    return status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function updateStockQuantity(id, newQuantity) {
+    const item = stockItems.find(item => item.id === id);
+    if (item) {
+        item.quantity = parseInt(newQuantity) || 0;
+        
+        // Update status based on quantity
+        if (item.quantity === 0) {
+            item.status = 'out-of-stock';
+        } else if (item.quantity <= 10) {
+            item.status = 'low-stock';
+        } else {
+            item.status = 'in-stock';
+        }
+        
+        saveStockData();
+        displayStockTable(stockItems);
+    }
+}
+
+function addStockItem() {
+    // Get unique product types from recipes
+    const productTypes = Object.values(recipes).map(recipe => recipe.name);
+    
+    // Create modal for adding stock
+    const modal = document.createElement('div');
+    modal.className = 'order-modal';
+    
+    modal.innerHTML = `
+        <div class="order-modal-content">
+            <h3>Add New Stock Item</h3>
+            <div class="order-form" id="add-stock-form">
+                <div class="form-group">
+                    <label for="new-product-type">Product Type:</label>
+                    <select id="new-product-type" required>
+                        ${productTypes.map(type => `<option value="${type}">${type}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="new-jar-size">Jar Size:</label>
+                    <select id="new-jar-size" required>
+                        <option value="100g">100g</option>
+                        <option value="250g">250g</option>
+                        <option value="300g">300g</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="new-batch-number">Batch Number:</label>
+                    <input type="text" id="new-batch-number" required placeholder="e.g. MT-001">
+                </div>
+                <div class="form-group">
+                    <label for="new-production-date">Production Date:</label>
+                    <input type="date" id="new-production-date" required value="${getCurrentDate()}">
+                </div>
+                <div class="form-group">
+                    <label for="new-expiry-date">Expiry Date:</label>
+                    <input type="date" id="new-expiry-date" required value="${getOneYearLaterDate()}">
+                </div>
+                <div class="form-group">
+                    <label for="new-quantity">Quantity:</label>
+                    <input type="number" id="new-quantity" required min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="new-price">Price Per Unit (₹):</label>
+                    <input type="number" id="new-price" required min="0" value="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="new-location">Location:</label>
+                    <input type="text" id="new-location" required placeholder="e.g. Shelf A">
+                </div>
+                    <button onclick="closeStockModal()" class="btn btn-secondary">Cancel</button>
+                    <button onclick="saveNewStockItem()" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function getCurrentDate() {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+}
+
+function getOneYearLaterDate() {
+    const today = new Date();
+    const oneYearLater = new Date();
+    oneYearLater.setFullYear(today.getFullYear() + 1);
+    return oneYearLater.toISOString().split('T')[0];
+}
+
+function saveNewStockItem() {
+    const productType = document.getElementById('new-product-type').value;
+    const jarSize = document.getElementById('new-jar-size').value;
+    const batchNumber = document.getElementById('new-batch-number').value;
+    const productionDate = document.getElementById('new-production-date').value;
+    const expiryDate = document.getElementById('new-expiry-date').value;
+    const quantity = parseInt(document.getElementById('new-quantity').value) || 0;
+    const pricePerUnit = parseFloat(document.getElementById('new-price').value) || 0;
+    const location = document.getElementById('new-location').value;
+    
+    // Validate required fields
+    if (!productType || !jarSize || !batchNumber || !productionDate || !expiryDate || !location) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    // Determine status based on quantity
+    let status = 'in-stock';
+    if (quantity === 0) {
+        status = 'out-of-stock';
+    } else if (quantity <= 10) {
+        status = 'low-stock';
+    }
+    
+    // Generate a new ID
+    const newId = stockItems.length > 0 ? Math.max(...stockItems.map(item => item.id)) + 1 : 1;
+    
+    // Add new stock item
+    stockItems.push({
+        id: newId,
+        productType,
+        jarSize,
+        batchNumber,
+        productionDate,
+        expiryDate,
+        quantity,
+        pricePerUnit,
+        status,
+        location
+    });
+    
+    saveStockData();
+    closeStockModal();
+    displayStockTable(stockItems);
+    
+    // Update filters to include new options
+    displayStockFilters();
+}
+
+function closeStockModal() {
+    const modal = document.querySelector('.order-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function editStockItem(id) {
+    const item = stockItems.find(item => item.id === id);
+    if (!item) return;
+    
+    // Get unique product types from recipes
+    const productTypes = Object.values(recipes).map(recipe => recipe.name);
+    
+    // Create modal for editing stock
+    const modal = document.createElement('div');
+    modal.className = 'order-modal';
+    
+    modal.innerHTML = `
+        <div class="order-modal-content">
+            <h3>Edit Stock Item</h3>
+            <div class="order-form" id="edit-stock-form">
+                <div class="form-group">
+                    <label for="edit-product-type">Product Type:</label>
+                    <select id="edit-product-type" required>
+                        ${productTypes.map(type => `<option value="${type}" ${item.productType === type ? 'selected' : ''}>${type}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-jar-size">Jar Size:</label>
+                    <select id="edit-jar-size" required>
+                        <option value="100g" ${item.jarSize === '100g' ? 'selected' : ''}>100g</option>
+                        <option value="250g" ${item.jarSize === '250g' ? 'selected' : ''}>250g</option>
+                        <option value="300g" ${item.jarSize === '300g' ? 'selected' : ''}>300g</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-batch-number">Batch Number:</label>
+                    <input type="text" id="edit-batch-number" required value="${item.batchNumber}">
+                </div>
+                <div class="form-group">
+                    <label for="edit-production-date">Production Date:</label>
+                    <input type="date" id="edit-production-date" required value="${item.productionDate}">
+                </div>
+                <div class="form-group">
+                    <label for="edit-expiry-date">Expiry Date:</label>
+                    <input type="date" id="edit-expiry-date" required value="${item.expiryDate}">
+                </div>
+                <div class="form-group">
+                    <label for="edit-quantity">Quantity:</label>
+                    <input type="number" id="edit-quantity" required min="0" value="${item.quantity}">
+                </div>
+                <div class="form-group">
+                    <label for="edit-price">Price Per Unit (₹):</label>
+                    <input type="number" id="edit-price" required min="0" value="${item.pricePerUnit}" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="edit-location">Location:</label>
+                    <input type="text" id="edit-location" required value="${item.location}">
+                </div>
+                <div class="order-actions">
+                    <button onclick="closeStockModal()" class="btn btn-secondary">Cancel</button>
+                    <button onclick="updateStockItem(${item.id})" class="btn btn-primary">Update</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function updateStockItem(id) {
+    const item = stockItems.find(item => item.id === id);
+    if (!item) return;
+    
+    const productType = document.getElementById('edit-product-type').value;
+    const jarSize = document.getElementById('edit-jar-size').value;
+    const batchNumber = document.getElementById('edit-batch-number').value;
+    const productionDate = document.getElementById('edit-production-date').value;
+    const expiryDate = document.getElementById('edit-expiry-date').value;
+    const quantity = parseInt(document.getElementById('edit-quantity').value) || 0;
+    const pricePerUnit = parseFloat(document.getElementById('edit-price').value) || 0;
+    const location = document.getElementById('edit-location').value;
+    
+    // Validate required fields
+    if (!productType || !jarSize || !batchNumber || !productionDate || !expiryDate || !location) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    // Determine status based on quantity
+    let status = 'in-stock';
+    if (quantity === 0) {
+        status = 'out-of-stock';
+    } else if (quantity <= 10) {
+        status = 'low-stock';
+    }
+    
+    // Update item
+    item.productType = productType;
+    item.jarSize = jarSize;
+    item.batchNumber = batchNumber;
+    item.productionDate = productionDate;
+    item.expiryDate = expiryDate;
+    item.quantity = quantity;
+    item.pricePerUnit = pricePerUnit;
+    item.status = status;
+    item.location = location;
+    
+    saveStockData();
+    closeStockModal();
+    displayStockTable(stockItems);
+}
+
+// Simple Order Tracking functionality for grandmothers
+let todaysCustomers = [];
+let currentBottleCounts = { '100g': 0, '250g': 0 };
+
+function initializeSimpleOrderTracking() {
+    // Load today's customers from localStorage
+    const today = getCurrentDate();
+    const storedCustomers = localStorage.getItem(`customers_${today}`);
+    if (storedCustomers) {
+        todaysCustomers = JSON.parse(storedCustomers);
+    }
+    
+    // Initialize counter displays
+    updateCounterDisplays();
+    updateCustomersDisplay();
+    updateSummaryStats();
+    updateTotalAmount();
+}
+
+function changeBottleCount(size, delta) {
+    console.log(`Changing ${size} by ${delta}`); // Debug log
+    
+    currentBottleCounts[size] = Math.max(0, currentBottleCounts[size] + delta);
+    
+    // Update the display immediately
+    updateCounterDisplays();
+    updateTotalAmount();
+}
+
+function updateCounterDisplays() {
+    // Update both counter displays
+    const count100g = document.getElementById('count-100g');
+    const count250g = document.getElementById('count-250g');
+    
+    if (count100g) {
+        count100g.textContent = currentBottleCounts['100g'];
+    }
+    if (count250g) {
+        count250g.textContent = currentBottleCounts['250g'];
+    }
+}
+
+function updateTotalAmount() {
+    const total100g = currentBottleCounts['100g'] * 65;
+    const total250g = currentBottleCounts['250g'] * 150;
+    const totalAmount = total100g + total250g;
+    
+    const totalAmountElement = document.getElementById('total-amount');
+    if (totalAmountElement) {
+        totalAmountElement.textContent = `₹${totalAmount}`;
+    }
+}
+
+function saveCustomerOrder() {
+    const customerName = document.getElementById('customer-name').value.trim();
+    const customerPhone = document.getElementById('customer-phone').value.trim();
+    
+    // Validation
+    if (!customerName) {
+        alert('Please enter customer name');
+        return;
+    }
+    
+    if (currentBottleCounts['100g'] === 0 && currentBottleCounts['250g'] === 0) {
+        alert('Please select at least one bottle');
+        return;
+    }
+    
+    // Calculate totals
+    const total100g = currentBottleCounts['100g'] * 65;
+    const total250g = currentBottleCounts['250g'] * 150;
+    const totalAmount = total100g + total250g;
+    const totalBottles = currentBottleCounts['100g'] + currentBottleCounts['250g'];
+    
+    // Create customer record
+    const customer = {
+        id: Date.now(),
+        name: customerName,
+        phone: customerPhone,
+        bottles100g: currentBottleCounts['100g'],
+        bottles250g: currentBottleCounts['250g'],
+        totalBottles: totalBottles,
+        totalAmount: totalAmount,
+        timestamp: new Date().toLocaleTimeString('en-IN')
+    };
+    
+    // Add to today's customers
+    todaysCustomers.push(customer);
+    
+    // Save to localStorage with today's date
+    const today = getCurrentDate();
+    localStorage.setItem(`customers_${today}`, JSON.stringify(todaysCustomers));
+    
+    // Clear form first
+    clearForm();
+    
+    // Force immediate update of displays with slight delay to ensure DOM is ready
+    setTimeout(() => {
+        updateCustomersDisplay();
+        updateSummaryStats();
+    }, 50);
+    
+    // Show success message
+    alert(`✅ Customer saved successfully!\n${customerName} owes ₹${totalAmount}`);
+}
+
+function clearForm() {
+    const customerNameInput = document.getElementById('customer-name');
+    const customerPhoneInput = document.getElementById('customer-phone');
+    
+    if (customerNameInput) customerNameInput.value = '';
+    if (customerPhoneInput) customerPhoneInput.value = '';
+    
+    // Reset bottle counts
+    currentBottleCounts = { '100g': 0, '250g': 0 };
+    
+    // Update displays
+    updateCounterDisplays();
+    updateTotalAmount();
+}
+
+function updateCustomersDisplay() {
+    const tableContainer = document.getElementById('simple-customers-table');
+    
+    if (todaysCustomers.length === 0) {
+        tableContainer.innerHTML = `
+            <div class="empty-customers">
+                <p>No customers added today</p>
+                <p>Start by adding your first customer above 👆</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = '';
+    
+    // Sort customers by most recent first
+    const sortedCustomers = [...todaysCustomers].sort((a, b) => b.id - a.id);
+    
+    sortedCustomers.forEach(customer => {
+        const bottlesText = [];
+        if (customer.bottles100g > 0) {
+            bottlesText.push(`${customer.bottles100g} × 100g`);
+        }
+        if (customer.bottles250g > 0) {
+            bottlesText.push(`${customer.bottles250g} × 250g`);
+        }
+        
+        tableHTML += `
+            <div class="customer-entry">
+                <div class="customer-info">
+                    <div class="customer-name">${customer.name}</div>
+                    <div class="customer-phone">${customer.phone || 'No phone'}</div>
+                    <small style="color: #7f8c8d;">${customer.timestamp}</small>
+                </div>
+                
+                <div class="customer-bottles">
+                    <div class="bottles-count">${bottlesText.join(' + ')}</div>
+                    <small style="color: #7f8c8d;">Total: ${customer.totalBottles} bottles</small>
+                </div>
+                
+                <div class="customer-total">₹${customer.totalAmount}</div>
+                
+                <button onclick="deleteCustomer(${customer.id})" class="delete-customer-btn" title="Delete customer">
+                    🗑️
+                </button>
+            </div>
+        `;
+    });
+    
+    tableContainer.innerHTML = tableHTML;
+}
+
+function updateSummaryStats() {
+    const totalCustomers = todaysCustomers.length;
+    const totalBottles = todaysCustomers.reduce((sum, customer) => sum + customer.totalBottles, 0);
+    const totalMoney = todaysCustomers.reduce((sum, customer) => sum + customer.totalAmount, 0);
+    
+    // Update the summary stats with proper null checks
+    const totalCustomersElement = document.getElementById('total-customers');
+    const totalBottlesElement = document.getElementById('total-bottles');
+    const totalMoneyElement = document.getElementById('total-money');
+    
+    if (totalCustomersElement) totalCustomersElement.textContent = totalCustomers;
+    if (totalBottlesElement) totalBottlesElement.textContent = totalBottles;
+    if (totalMoneyElement) totalMoneyElement.textContent = `₹${totalMoney}`;
+}
+
+function deleteCustomer(customerId) {
+    const customer = todaysCustomers.find(c => c.id === customerId);
+    if (!customer) return;
+    
+    const isConfirmed = confirm(`Delete ${customer.name}?\nThey owed ₹${customer.totalAmount}`);
+    if (!isConfirmed) return;
+    
+    // Remove from array
+    todaysCustomers = todaysCustomers.filter(c => c.id !== customerId);
+    
+    // Save updated list
+    const today = getCurrentDate();
+    localStorage.setItem(`customers_${today}`, JSON.stringify(todaysCustomers));
+    
+    // Update display
+    updateCustomersDisplay();
+    updateSummaryStats();
+}
+
+function exportTodaysCustomers() {
+    if (todaysCustomers.length === 0) {
+        alert('No customers to export today');
+        return;
+    }
+    
+    const today = getCurrentDate();
+    const totalCustomers = todaysCustomers.length;
+    const totalBottles = todaysCustomers.reduce((sum, c) => sum + c.totalBottles, 0);
+    const totalMoney = todaysCustomers.reduce((sum, c) => sum + c.totalAmount, 0);
+    
+    // Create a formatted report for printing
+    let reportContent = `PURELY PICKLES - DAILY CUSTOMER REPORT\n`;
+    reportContent += `Date: ${today}\n`;
+    reportContent += `Time: ${new Date().toLocaleTimeString('en-IN')}\n`;
+    reportContent += `=${'='.repeat(50)}\n\n`;
+    
+    reportContent += `CUSTOMER DETAILS:\n`;
+    reportContent += `${'-'.repeat(50)}\n`;
+    
+    // Sort customers by timestamp
+    const sortedCustomers = [...todaysCustomers].sort((a, b) => {
+        const timeA = a.timestamp || '00:00:00';
+        const timeB = b.timestamp || '00:00:00';
+        return timeA.localeCompare(timeB);
+    });
+    
+    sortedCustomers.forEach((customer, index) => {
+        reportContent += `${index + 1}. ${customer.name}\n`;
+        reportContent += `   Phone: ${customer.phone || 'Not provided'}\n`;
+        reportContent += `   Time: ${customer.timestamp}\n`;
+        
+        // Show bottles breakdown
+        const bottlesList = [];
+        if (customer.bottles100g > 0) {
+            bottlesList.push(`${customer.bottles100g} × 100g jars (₹${customer.bottles100g * 65})`);
+        }
+        if (customer.bottles250g > 0) {
+            bottlesList.push(`${customer.bottles250g} × 250g jars (₹${customer.bottles250g * 150})`);
+        }
+        
+        reportContent += `   Bottles: ${bottlesList.join(', ')}\n`;
+        reportContent += `   Total Amount: ₹${customer.totalAmount}\n`;
+        reportContent += `   ${'-'.repeat(30)}\n`;
+    });
+    
+    // Add summary
+    reportContent += `\nDAILY SUMMARY:\n`;
+    reportContent += `${'='.repeat(30)}\n`;
+    reportContent += `Total Customers: ${totalCustomers}\n`;
+    reportContent += `Total Bottles Sold: ${totalBottles}\n`;
+    reportContent += `Total Money Collected: ₹${totalMoney}\n\n`;
+    
+    // Breakdown by jar size
+    const total100g = todaysCustomers.reduce((sum, c) => sum + c.bottles100g, 0);
+    const total250g = todaysCustomers.reduce((sum, c) => sum + c.bottles250g, 0);
+    const revenue100g = total100g * 65;
+    const revenue250g = total250g * 150;
+    
+    reportContent += `BOTTLES BREAKDOWN:\n`;
+    reportContent += `100g jars: ${total100g} bottles = ₹${revenue100g}\n`;
+    reportContent += `250g jars: ${total250g} bottles = ₹${revenue250g}\n`;
+    reportContent += `Total Revenue: ₹${revenue100g + revenue250g}\n\n`;
+    
+    reportContent += `Report generated on: ${new Date().toLocaleString('en-IN')}\n`;
+    reportContent += `${'='.repeat(50)}\n`;
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Purely Pickles - Daily Report</title>
+            <style>
+                body {
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    line-height: 1.4;
+                    margin: 20px;
+                    color: #000;
+                }
+                pre {
+                    white-space: pre-wrap;
+                    margin: 0;
+                }
+                @media print {
+                    body { margin: 15px; }
+                }
+            </style>
+        </head>
+        <body>
+            <pre>${reportContent}</pre>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Auto-print after a short delay
+    setTimeout(() => {
+        printWindow.print();
+    }, 500);
+    
+    // Also offer CSV download as backup
+    const csvHeaders = ['Time', 'Customer Name', 'Phone', '100g Bottles', '250g Bottles', 'Total Bottles', 'Amount Owed'];
+    let csvContent = `Purely Pickles Daily Report - ${today}\n\n`;
+    csvContent += csvHeaders.join(',') + '\n';
+    
+    sortedCustomers.forEach(customer => {
+        const row = [
+            customer.timestamp || '',
+            `"${customer.name}"`,
+            `"${customer.phone || ''}"`,
+            customer.bottles100g || 0,
+            customer.bottles250g || 0,
+            customer.totalBottles || 0,
+            customer.totalAmount || 0
+        ];
+        csvContent += row.join(',') + '\n';
+    });
+    
+    csvContent += `\nSUMMARY\n`;
+    csvContent += `Total Customers,${totalCustomers}\n`;
+    csvContent += `Total Bottles Sold,${totalBottles}\n`;
+    csvContent += `Total Money Owed,₹${totalMoney}\n`;
+    
+    // Create download link for CSV backup
+    setTimeout(() => {
+        const shouldDownloadCSV = confirm('Print window opened. Would you also like to download a CSV backup?');
+        if (shouldDownloadCSV) {
+            downloadCSV(csvContent, `purely_pickles_report_${today}.csv`);
+        }
+    }, 1000);
+}
+
+// Update DOMContentLoaded to include simple order tracking initialization
 document.addEventListener('DOMContentLoaded', function() {
     // Load stored data
     loadStoredData();
@@ -685,385 +1596,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize inventory for the first time
     initializeInventory();
+    
+    // Initialize stock management
+    initializeStockManagement();
+    
+    // Initialize simple order tracking
+    initializeSimpleOrderTracking();
 });
-
-// Recipe Manager Functions
-function displayRecipeManager() {
-    const tableContainer = document.getElementById('recipe-table');
-    
-    let tableHTML = `
-        <table>
-            <thead>
-                <tr>
-                    <th>Recipe Name</th>
-                    <th>Batch Size (g)</th>
-                    <th>Ingredients Count</th>
-                    <th>Total Cost (₹)</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    
-    Object.keys(recipes).forEach(recipeKey => {
-        const recipe = recipes[recipeKey];
-        tableHTML += `
-            <tr>
-                <td>${recipe.name}</td>
-                <td>${recipe.batchSize}</td>
-                <td>${recipe.ingredients.length}</td>
-                <td>₹${recipe.totalCost.toFixed(2)}</td>
-                <td>
-                    <button onclick="editRecipe('${recipeKey}')" class="btn btn-primary">Edit</button>
-                    <button onclick="deleteRecipe('${recipeKey}')" class="btn btn-secondary">Delete</button>
-                </td>
-            </tr>
-        `;
-    });
-    
-    tableHTML += `
-            </tbody>
-        </table>
-    `;
-    
-    tableContainer.innerHTML = tableHTML;
-}
-
-function addRecipe() {
-    const recipeName = prompt('Enter recipe name:');
-    if (!recipeName) return;
-    
-    const batchSize = parseInt(prompt('Enter batch size (grams):')) || 1000;
-    const recipeKey = recipeName.toLowerCase().replace(/\s+/g, '-');
-    
-    recipes[recipeKey] = {
-        name: recipeName,
-        batchSize: batchSize,
-        ingredients: [],
-        totalIngredientsCost: 0,
-        laborCost: (batchSize / 1000) * packaging.laborPerKg,
-        totalCost: 0
-    };
-    
-    saveData();
-    updateRecipeDropdowns();
-    displayRecipeManager();
-    editRecipe(recipeKey);
-}
-
-function editRecipe(recipeKey) {
-    const recipe = recipes[recipeKey];
-    if (!recipe) return;
-    
-    // Set the editing recipe variable immediately
-    editingRecipe = recipe;
-    
-    // Create a modal-like interface for editing
-    const modal = document.createElement('div');
-    modal.className = 'recipe-modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h3>Edit Recipe: ${recipe.name}</h3>
-            <div class="recipe-form">
-                <label>Recipe Name:</label>
-                <input type="text" id="edit-recipe-name" value="${recipe.name}">
-                
-                <label>Batch Size (g):</label>
-                <input type="number" id="edit-batch-size" value="${recipe.batchSize}">
-                
-                <h4>Ingredients</h4>
-                <div id="edit-ingredients"></div>
-                
-                <button onclick="addIngredientToRecipe()" class="btn btn-primary">Add Ingredient</button>
-                <div class="modal-actions">
-                    <button onclick="saveRecipe('${recipeKey}')" class="btn btn-primary">Save</button>
-                    <button onclick="closeRecipeModal()" class="btn btn-secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    displayRecipeIngredients(recipe);
-}
-
-function displayRecipeIngredients(recipe) {
-    const container = document.getElementById('edit-ingredients');
-    
-    let ingredientsHTML = `
-        <div class="ingredient-header">
-            <span class="field-label">Ingredient Name</span>
-            <span class="field-label">Quantity</span>
-            <span class="field-label">Unit (g/ml/pcs)</span>
-            <span class="field-label">Price per Unit (₹)</span>
-            <span class="field-label">Total Cost (₹)</span>
-            <span class="field-label">Action</span>
-        </div>
-    `;
-    
-    recipe.ingredients.forEach((ingredient, index) => {
-        ingredientsHTML += `
-            <div class="ingredient-row">
-                <input type="text" placeholder="e.g. Chilli Powder" value="${ingredient.name}" onchange="updateRecipeIngredient(${index}, 'name', this.value)" class="ingredient-name">
-                <input type="number" placeholder="100" value="${ingredient.quantity}" onchange="updateRecipeIngredient(${index}, 'quantity', this.value)" class="ingredient-quantity">
-                <select onchange="updateRecipeIngredient(${index}, 'unit', this.value)" class="ingredient-unit">
-                    <option value="g" ${ingredient.unit === 'g' ? 'selected' : ''}>grams (g)</option>
-                    <option value="ml" ${ingredient.unit === 'ml' ? 'selected' : ''}>milliliters (ml)</option>
-                    <option value="pcs" ${ingredient.unit === 'pcs' ? 'selected' : ''}>pieces (pcs)</option>
-                    <option value="kg" ${ingredient.unit === 'kg' ? 'selected' : ''}>kilograms (kg)</option>
-                </select>
-                <input type="number" placeholder="0.50" value="${ingredient.pricePerGram}" step="0.001" onchange="updateRecipeIngredient(${index}, 'pricePerGram', this.value)" class="ingredient-price">
-                <span class="ingredient-cost">₹${ingredient.cost.toFixed(2)}</span>
-                <button onclick="removeRecipeIngredient(${index})" class="btn btn-remove">Remove</button>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = ingredientsHTML;
-}
-
-let editingRecipe = null;
-
-function updateRecipeIngredient(index, field, value) {
-    if (!editingRecipe) return;
-    
-    editingRecipe.ingredients[index][field] = field === 'pricePerGram' || field === 'quantity' ? parseFloat(value) || 0 : value;
-    
-    // Recalculate cost
-    const ingredient = editingRecipe.ingredients[index];
-    ingredient.cost = ingredient.quantity * ingredient.pricePerGram;
-    
-    displayRecipeIngredients(editingRecipe);
-}
-
-function addIngredientToRecipe() {
-    if (!editingRecipe) return;
-    
-    editingRecipe.ingredients.push({
-        name: '',
-        quantity: 0,
-        unit: 'g',
-        pricePerGram: 0,
-        cost: 0
-    });
-    
-    displayRecipeIngredients(editingRecipe);
-}
-
-function removeRecipeIngredient(index) {
-    if (!editingRecipe) return;
-    
-    editingRecipe.ingredients.splice(index, 1);
-    displayRecipeIngredients(editingRecipe);
-}
-
-function saveRecipe(recipeKey) {
-    const recipe = recipes[recipeKey];
-    editingRecipe = recipe;
-    
-    recipe.name = document.getElementById('edit-recipe-name').value;
-    recipe.batchSize = parseInt(document.getElementById('edit-batch-size').value) || 1000;
-    
-    // Recalculate totals
-    recipe.totalIngredientsCost = recipe.ingredients.reduce((sum, ingredient) => sum + ingredient.cost, 0);
-    recipe.laborCost = (recipe.batchSize / 1000) * packaging.laborPerKg;
-    recipe.totalCost = recipe.totalIngredientsCost + recipe.laborCost;
-    
-    saveData();
-    updateRecipeDropdowns();
-    displayRecipeManager();
-    closeRecipeModal();
-    editingRecipe = null;
-}
-
-function deleteRecipe(recipeKey) {
-    if (confirm(`Are you sure you want to delete ${recipes[recipeKey].name}?`)) {
-        delete recipes[recipeKey];
-        saveData();
-        updateRecipeDropdowns();
-        displayRecipeManager();
-    }
-}
-
-function closeRecipeModal() {
-    const modal = document.querySelector('.recipe-modal');
-    if (modal) {
-        modal.remove();
-    }
-    editingRecipe = null;
-}
-
-function exportRecipes() {
-    const dataStr = JSON.stringify(recipes, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'pickle_recipes.json';
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-
-// Settings Functions
-function updateLaborCost() {
-    packaging.laborPerKg = parseFloat(document.getElementById('labor-cost-setting').value) || 120;
-    
-    // Update labor costs for jar calculations
-    packaging.labor100g = (100 / 1000) * packaging.laborPerKg;
-    packaging.labor250g = (250 / 1000) * packaging.laborPerKg;
-    
-    saveData();
-    
-    // Update the labor cost label immediately
-    const laborCostLabel = document.getElementById('labor-cost-label');
-    if (laborCostLabel) {
-        laborCostLabel.textContent = `Labor Cost (₹${packaging.laborPerKg}/kg):`;
-    }
-    
-    // Refresh current recipe display if any
-    if (currentRecipe) {
-        // Recalculate labor cost for current recipe
-        currentRecipe.laborCost = (currentRecipe.batchSize / 1000) * packaging.laborPerKg;
-        currentRecipe.totalCost = currentRecipe.totalIngredientsCost + currentRecipe.laborCost;
-        displayRecipeDetails();
-    }
-}
-
-function updatePackagingCost(jarSize) {
-    if (jarSize === '100g') {
-        packaging.jar100g = parseFloat(document.getElementById('packaging-100g').value) || 15;
-    } else if (jarSize === '250g') {
-        packaging.jar250g = parseFloat(document.getElementById('packaging-250g').value) || 20;
-    }
-    
-    saveData();
-    
-    // Refresh current recipe display if any
-    if (currentRecipe) {
-        displayRecipeDetails();
-    }
-}
-
-function updateRecipeDropdowns() {
-    // Update cost calculator dropdown
-    const costCalculatorSelect = document.getElementById('recipe-select');
-    const profitAnalyzerSelect = document.getElementById('batch-recipe');
-    
-    // Clear existing options (except first one)
-    costCalculatorSelect.innerHTML = '<option value="">Choose a recipe...</option>';
-    profitAnalyzerSelect.innerHTML = '<option value="">Select recipe...</option>';
-    
-    // Add all recipes with CURRENT batch sizes (not original)
-    Object.keys(recipes).forEach(recipeKey => {
-        const recipe = recipes[recipeKey];
-        // If this recipe is currently selected, show the current batch size, otherwise show original
-        const displayBatchSize = (currentRecipe && document.getElementById('recipe-select').value === recipeKey) 
-            ? currentBatchSize 
-            : recipe.batchSize;
-            
-        const option1 = new Option(`${recipe.name} (${displayBatchSize}g)`, recipeKey);
-        const option2 = new Option(recipe.name, recipeKey);
-        
-        costCalculatorSelect.appendChild(option1);
-        profitAnalyzerSelect.appendChild(option2);
-    });
-}
-
-// Make ingredients table editable
-function displayIngredientsTable() {
-    const tableContainer = document.getElementById('ingredients-table');
-    
-    let tableHTML = `
-        <table>
-            <thead>
-                <tr>
-                    <th>Ingredient</th>
-                    <th>Quantity</th>
-                    <th>Unit</th>
-                    <th>Price per gram (₹)</th>
-                    <th>Cost (₹)</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    
-    currentRecipe.ingredients.forEach((ingredient, index) => {
-        tableHTML += `
-            <tr>
-                <td><input type="text" value="${ingredient.name}" onchange="updateCurrentIngredient(${index}, 'name', this.value)"></td>
-                <td><input type="number" value="${ingredient.quantity}" onchange="updateCurrentIngredient(${index}, 'quantity', this.value)"></td>
-                <td><input type="text" value="${ingredient.unit}" onchange="updateCurrentIngredient(${index}, 'unit', this.value)"></td>
-                <td><input type="number" value="${ingredient.pricePerGram}" step="0.001" onchange="updateCurrentIngredient(${index}, 'pricePerGram', this.value)"></td>
-                <td>₹${ingredient.cost.toFixed(2)}</td>
-                <td><button onclick="removeCurrentIngredient(${index})" class="btn btn-secondary">Remove</button></td>
-            </tr>
-        `;
-    });
-    
-    tableHTML += `
-            </tbody>
-        </table>
-        <button onclick="addCurrentIngredient()" class="btn btn-primary">Add Ingredient</button>
-    `;
-    
-    tableContainer.innerHTML = tableHTML;
-}
-
-function updateCurrentIngredient(index, field, value) {
-    const recipeKey = document.getElementById('recipe-select').value;
-    if (!recipeKey) return;
-    
-    currentRecipe.ingredients[index][field] = field === 'pricePerGram' || field === 'quantity' ? parseFloat(value) || 0 : value;
-    
-    // Recalculate cost
-    const ingredient = currentRecipe.ingredients[index];
-    ingredient.cost = ingredient.quantity * ingredient.pricePerGram;
-    
-    // Update recipe in recipes object
-    recipes[recipeKey] = currentRecipe;
-    
-    // Recalculate recipe totals
-    recalculateRecipeTotals();
-    
-    // Refresh display
-    displayRecipeDetails();
-    saveData();
-}
-
-function addCurrentIngredient() {
-    const recipeKey = document.getElementById('recipe-select').value;
-    if (!recipeKey) return;
-    
-    currentRecipe.ingredients.push({
-        name: 'New Ingredient',
-        quantity: 0,
-        unit: 'g',
-        pricePerGram: 0,
-        cost: 0
-    });
-    
-    recipes[recipeKey] = currentRecipe;
-    recalculateRecipeTotals();
-    displayRecipeDetails();
-    saveData();
-}
-
-function removeCurrentIngredient(index) {
-    const recipeKey = document.getElementById('recipe-select').value;
-    if (!recipeKey) return;
-    
-    currentRecipe.ingredients.splice(index, 1);
-    recipes[recipeKey] = currentRecipe;
-    recalculateRecipeTotals();
-    displayRecipeDetails();
-    saveData();
-}
-
-function recalculateRecipeTotals() {
-    if (!currentRecipe) return;
-    
-    currentRecipe.totalIngredientsCost = currentRecipe.ingredients.reduce((sum, ingredient) => sum + ingredient.cost, 0);
-    currentRecipe.laborCost = (currentRecipe.batchSize / 1000) * packaging.laborPerKg;
-    currentRecipe.totalCost = currentRecipe.totalIngredientsCost + currentRecipe.laborCost;
-}
